@@ -1,37 +1,41 @@
-const express = require("express")
-const mongoose = require("mongoose")
-const cors = require("cors")
-const EmployeeModel = require("./model/Employee")
+import express from 'express';
+import mysql from 'mysql2/promise';
+import dotenv from 'dotenv';
 
-const app = express()
-app.use(express.json())
-app.use(cors())
+dotenv.config();
 
-mongoose.connect("mongodb+srv://yashjain:yashjain2910@ecebu.yjsi7bo.mongodb.net/");
+const app = express();
+app.use(express.json());
 
-app.post("/login", (req, res) => {
-    const {email, password} = req.body;
-    EmployeeModel.findOne({email : email})
-    .then(user => {
-        if(user) {
-            if(user.password === password){
-                res.json("Success")
-            }else{
-                res.json("The password is incorrect")
-            }
-        }else{
-            res.json("No record existed")
+const dbConfig = {
+    host: "139.5.190.143",
+    user: "yash",
+    password: "A@9u)RSDvvEwRMOT",
+    database: "ssmile",
+};
+
+async function getEmp(req, res) {
+    let connection;
+    try {
+        connection = await mysql.createConnection(dbConfig);
+        console.log('Connection successful');
+
+        const [rows, fields] = await connection.execute('SELECT * FROM Employees');
+        console.log(rows);
+
+        res.json(rows);
+    } catch (err) {
+        console.error('Error connecting to the database:', err);
+        res.status(500).json({ error: 'Database connection failed' });
+    } finally {
+        if (connection) {
+            await connection.end();
         }
-    })
-})
+    }
+}
 
-app.post("/register", (req, res) => {
-    EmployeeModel.create(req.body)
-    .then(employees => res.json(employees))
-    .catch(err => res.json(err))
-})
+app.get('/employees', getEmp);
 
-
-app.listen(3001, () => {
-    console.log("server is running")
-})
+app.listen(3306, () => {
+    console.log('Server is running on port 3306');
+});
